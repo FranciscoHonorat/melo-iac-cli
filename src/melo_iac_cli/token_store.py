@@ -6,7 +6,9 @@ class TokenStore:
         self._path = path
 
     def save(self, token: str) -> None:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
         self._path.write_text(token, encoding="utf-8")
+        self._path.chmod(0o600)
 
     def load(self) -> str | None:
         try:
@@ -15,4 +17,4 @@ class TokenStore:
             return None
 
     def clear(self) -> None:
-        return self._path.unlink(missing_ok=True)
+        self._path.unlink(missing_ok=True)
