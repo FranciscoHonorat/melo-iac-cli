@@ -13,3 +13,6 @@ class TokenStore:
             return self._path.read_text(encoding="utf-8")
         except FileNotFoundError:
             return None
+
+    def clear(self) -> None:
+        return self._path.unlink(missing_ok=True)
