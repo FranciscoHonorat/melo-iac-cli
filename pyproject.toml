@@ -52,7 +52,7 @@ select = ["F"]
 exclude = [".git", "__pycache__", ".venv", "build", "dist"]
 
 [tool.zuban]
-python-version = "3.14"
+python_version = "3.14"
 mode = "default"
 strict = true
 warn_unused_ignores = true
