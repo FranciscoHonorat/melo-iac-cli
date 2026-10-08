@@ -19,3 +19,10 @@ class TokenStoreTest(unittest.TestCase):
         loaded_token = TokenStore(path=path).load()
 
         self.assertEqual(loaded_token, token)
+
+    def test_load_returns_none_when_no_token_saved(self) -> None:
+        path = self.tmp_dir / "credentials"
+
+        loaded_token = TokenStore(path=path).load()
+
+        self.assertIsNone(loaded_token)

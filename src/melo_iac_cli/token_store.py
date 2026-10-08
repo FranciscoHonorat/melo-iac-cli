@@ -8,5 +8,8 @@ class TokenStore:
     def save(self, token: str) -> None:
         self._path.write_text(token, encoding="utf-8")
 
-    def load(self) -> str:
-        return self._path.read_text(encoding="utf-8")
+    def load(self) -> str | None:
+        try:
+            return self._path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return None
