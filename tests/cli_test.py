@@ -1,6 +1,8 @@
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 
 import httpx
@@ -78,3 +80,31 @@ class CliTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         sent = json.loads(self.requests[0].content)
         self.assertEqual(sent["password"], "secret")
+
+    def test_auth_login_fails_when_username_is_missing(self) -> None:
+        stderr = io.StringIO()
+
+        with redirect_stderr(stderr):
+            exit_code = run(
+                ["auth", "login", "--password", "secret"],
+                auth_service=self.make_service(httpx.Response(200)),
+                env={},
+            )
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("username is required", stderr.getvalue())
+        self.assertEqual(self.requests, [])
+
+    def test_auth_login_fails_when_credentials_are_invalid(self) -> None:
+        stderr = io.StringIO()
+
+        with redirect_stderr(stderr):
+            exit_code = run(
+                ["auth", "login", "--username", "ed", "--password", "wrong"],
+                auth_service=self.make_service(httpx.Response(401)),
+                env={},
+            )
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("invalid username or password", stderr.getvalue())
+        self.assertIsNone(self.token_store.load())

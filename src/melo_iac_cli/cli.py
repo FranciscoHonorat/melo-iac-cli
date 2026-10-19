@@ -1,8 +1,9 @@
 import argparse
 import getpass
+import sys
 from collections.abc import Callable, Mapping
 
-from melo_iac_cli.auth.auth_service import AuthService
+from melo_iac_cli.auth.auth_service import AuthService, InvalidCredentialsError
 
 
 def build_parser(env: Mapping[str, str]) -> argparse.ArgumentParser:
@@ -29,8 +30,19 @@ def run(
 ) -> int:
     args = build_parser(env).parse_args(argv)
     if args.auth_command == "login":
+        if not args.username:
+            print(
+                "error: username is required "
+                "(use --username or MELO_IAC_USERNAME)",
+                file=sys.stderr,
+            )
+            return 2
         password = args.password or prompt_password("Password: ")
-        auth_service.login(username=args.username, password=password)
+        try:
+            auth_service.login(username=args.username, password=password)
+        except InvalidCredentialsError:
+            print("error: invalid username or password", file=sys.stderr)
+            return 1
     elif args.auth_command == "logout":
         auth_service.logout()
     return 0
