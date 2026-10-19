@@ -1,0 +1,60 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+import httpx
+
+from melo_iac_cli.auth.auth_service import AuthService
+from melo_iac_cli.auth.token_store import TokenStore
+from melo_iac_cli.cli import run
+
+
+class CliTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.token_store = TokenStore(path=Path(tmp.name) / "credentials")
+
+    def make_service(self, response: httpx.Response) -> AuthService:
+        client = httpx.Client(
+            transport=httpx.MockTransport(lambda request: response),
+            base_url="http://melo.test",
+        )
+        self.addCleanup(client.close)
+        return AuthService(token_store=self.token_store, client=client)
+
+    def test_auth_logout_removes_saved_token(self) -> None:
+        self.token_store.save("abcd1234")
+
+        exit_code = run(
+            ["auth", "logout"],
+            auth_service=self.make_service(httpx.Response(200)),
+            env={},
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertIsNone(self.token_store.load())
+
+    def test_auth_login_saves_token(self) -> None:
+        exit_code = run(
+            ["auth", "login", "--username", "ed", "--password", "secret"],
+            auth_service=self.make_service(
+                httpx.Response(200, json={"token": "abcd1234"})
+            ),
+            env={},
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(self.token_store.load(), "abcd1234")
+
+    def test_auth_login_reads_credentials_from_env(self) -> None:
+        exit_code = run(
+            ["auth", "login"],
+            auth_service=self.make_service(
+                httpx.Response(200, json={"token": "abcd1234"})
+            ),
+            env={"MELO_IAC_USERNAME": "ed", "MELO_IAC_PASSWORD": "secret"},
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(self.token_store.load(), "abcd1234")
