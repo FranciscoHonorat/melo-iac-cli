@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from melo_iac_cli.token_store import TokenStore
+from melo_iac_cli.auth.token_store import TokenStore
 
 
 class TokenStoreTest(unittest.TestCase):
