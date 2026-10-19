@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,10 +15,15 @@ class CliTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.token_store = TokenStore(path=Path(tmp.name) / "credentials")
+        self.requests: list[httpx.Request] = []
 
     def make_service(self, response: httpx.Response) -> AuthService:
+        def fake_server(request: httpx.Request) -> httpx.Response:
+            self.requests.append(request)
+            return response
+
         client = httpx.Client(
-            transport=httpx.MockTransport(lambda request: response),
+            transport=httpx.MockTransport(fake_server),
             base_url="http://melo.test",
         )
         self.addCleanup(client.close)
@@ -58,3 +64,17 @@ class CliTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(self.token_store.load(), "abcd1234")
+
+    def test_auth_login_prompts_for_password_when_missing(self) -> None:
+        exit_code = run(
+            ["auth", "login", "--username", "ed"],
+            auth_service=self.make_service(
+                httpx.Response(200, json={"token": "abcd1234"})
+            ),
+            env={},
+            prompt_password=lambda prompt: "secret",
+        )
+
+        self.assertEqual(exit_code, 0)
+        sent = json.loads(self.requests[0].content)
+        self.assertEqual(sent["password"], "secret")

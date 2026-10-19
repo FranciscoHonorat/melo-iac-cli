@@ -1,5 +1,6 @@
 import argparse
-from collections.abc import Mapping
+import getpass
+from collections.abc import Callable, Mapping
 
 from melo_iac_cli.auth.auth_service import AuthService
 
@@ -21,11 +22,15 @@ def build_parser(env: Mapping[str, str]) -> argparse.ArgumentParser:
 
 
 def run(
-    argv: list[str], auth_service: AuthService, env: Mapping[str, str]
+    argv: list[str],
+    auth_service: AuthService,
+    env: Mapping[str, str],
+    prompt_password: Callable[[str], str] = getpass.getpass,
 ) -> int:
     args = build_parser(env).parse_args(argv)
     if args.auth_command == "login":
-        auth_service.login(username=args.username, password=args.password)
+        password = args.password or prompt_password("Password: ")
+        auth_service.login(username=args.username, password=password)
     elif args.auth_command == "logout":
         auth_service.logout()
     return 0
