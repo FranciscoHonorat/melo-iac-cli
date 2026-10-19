@@ -1,9 +1,14 @@
 import argparse
 import getpass
+import os
 import sys
 from collections.abc import Callable, Mapping
+from pathlib import Path
+
+import httpx
 
 from melo_iac_cli.auth.auth_service import AuthService, InvalidCredentialsError
+from melo_iac_cli.auth.token_store import TokenStore
 
 
 def build_parser(env: Mapping[str, str]) -> argparse.ArgumentParser:
@@ -46,3 +51,14 @@ def run(
     elif args.auth_command == "logout":
         auth_service.logout()
     return 0
+
+
+def main() -> int:
+    token_path = Path.home() / ".config" / "melo-iac" / "credentials"
+    api_url = os.environ.get("MELO_API_URL", "http://localhost:8080")
+
+    with httpx.Client(base_url=api_url) as client:
+        auth_service = AuthService(
+            token_store=TokenStore(path=token_path), client=client
+        )
+        return run(sys.argv[1:], auth_service=auth_service, env=os.environ)
