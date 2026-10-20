@@ -10,6 +10,7 @@ import httpx
 from melo_iac_cli.auth.auth_service import AuthService
 from melo_iac_cli.auth.token_store import TokenStore
 from melo_iac_cli.cli import run
+from melo_iac_cli.config import Settings
 
 
 class CliTest(unittest.TestCase):
@@ -37,7 +38,7 @@ class CliTest(unittest.TestCase):
         exit_code = run(
             ["auth", "logout"],
             auth_service=self.make_service(httpx.Response(200)),
-            env={},
+            settings=Settings.from_env({}),
         )
 
         self.assertEqual(exit_code, 0)
@@ -49,7 +50,7 @@ class CliTest(unittest.TestCase):
             auth_service=self.make_service(
                 httpx.Response(200, json={"token": "abcd1234"})
             ),
-            env={},
+            settings=Settings.from_env({}),
         )
 
         self.assertEqual(exit_code, 0)
@@ -61,7 +62,9 @@ class CliTest(unittest.TestCase):
             auth_service=self.make_service(
                 httpx.Response(200, json={"token": "abcd1234"})
             ),
-            env={"MELO_IAC_USERNAME": "ed", "MELO_IAC_PASSWORD": "secret"},
+            settings=Settings.from_env(
+                {"MELO_IAC_USERNAME": "ed", "MELO_IAC_PASSWORD": "secret"}
+            ),
         )
 
         self.assertEqual(exit_code, 0)
@@ -73,7 +76,7 @@ class CliTest(unittest.TestCase):
             auth_service=self.make_service(
                 httpx.Response(200, json={"token": "abcd1234"})
             ),
-            env={},
+            settings=Settings.from_env({}),
             prompt_password=lambda prompt: "secret",
         )
 
@@ -88,7 +91,7 @@ class CliTest(unittest.TestCase):
             exit_code = run(
                 ["auth", "login", "--password", "secret"],
                 auth_service=self.make_service(httpx.Response(200)),
-                env={},
+                settings=Settings.from_env({}),
             )
 
         self.assertEqual(exit_code, 2)
@@ -102,7 +105,7 @@ class CliTest(unittest.TestCase):
             exit_code = run(
                 ["auth", "login", "--username", "ed", "--password", "wrong"],
                 auth_service=self.make_service(httpx.Response(401)),
-                env={},
+                settings=Settings.from_env({}),
             )
 
         self.assertEqual(exit_code, 1)
