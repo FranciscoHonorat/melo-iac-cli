@@ -46,7 +46,7 @@ class AuthServiceTest(unittest.TestCase):
         self.assertEqual(self.token_store.load(), "abcd1234")
         request = self.requests[0]
         self.assertEqual(request.method, "POST")
-        self.assertEqual(request.url.path, "/auth/login")
+        self.assertEqual(request.url.path, "/v1/auth/login")
         self.assertEqual(
             json.loads(request.content),
             {"username": "ed", "password": "secret"},
